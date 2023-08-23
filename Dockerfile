@@ -4,11 +4,11 @@ RUN apt-get update -y && apt-get install -y libmcrypt-dev && apt-get -y install 
 RUN docker-php-ext-install pdo pdo_pgsql pgsql
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-
+COPY composer.json composer.json
 COPY . /app
 WORKDIR /app
 
-RUN composer install
+RUN composer -n install
 
 RUN sed -i 's/;extension=pgsql/extension=pgsql/g' ~/../usr/local/etc/php/php.ini-development
 
