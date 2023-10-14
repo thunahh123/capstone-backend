@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class RecipeIngredient extends Model
+class Rating extends Model
 {
     use HasFactory;
 
@@ -14,11 +14,7 @@ class RecipeIngredient extends Model
         return $this->belongsTo(Recipe::class);
     }
 
-    public function ingredient():BelongsTo{
-        return $this->belongsTo(Ingredient::class);
-    }
-
-    public function unit():BelongsTo{
-        return $this->belongsTo(MeasurementUnit::class,'unit_id');
+    public function user():BelongsTo{
+        return $this->belongsTo(User::class);
     }
 }

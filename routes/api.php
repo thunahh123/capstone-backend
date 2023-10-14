@@ -30,7 +30,7 @@ Route::controller(UserController::class)->group(function () {
     Route::get('/user', 'getAllUsers');
 
     //get user by id
-    Route::get('/user/{id}','getUser');
+    Route::get('/user/get/{id}','getUser');
 
     //register
     Route::post('/register','register');
@@ -38,8 +38,11 @@ Route::controller(UserController::class)->group(function () {
     //login
     Route::post('/login','login');
 
+    //logout
+    Route::delete('/logout','logout');
+
     //delete user
-    Route::delete('/user/delete/{id}','deleteUser') ;
+    Route::delete('/user/delete','deleteUser') ;
 
     //update email
     Route::put('/user/updateEmail','updateEmail');
@@ -47,6 +50,16 @@ Route::controller(UserController::class)->group(function () {
     //update password
     Route::put('/user/updatePW','updatePassword');
 
+    //get saved recipes
+    Route::get('/user/savedRecipes','getSavedRecipes');
+
+    //add new saved recipe
+    Route::post('/user/addSavedRecipe','addSavedRecipe');
+
+    //delete saved recipe
+    Route::delete('/user/deleteSavedRecipe','deleteSavedRecipe');
+
+    Route::get('/user/comments', 'getCommentsByUser');
     
 });
 
@@ -71,8 +84,21 @@ Route::controller(RecipeController::class)->group(function (){
     //measurement 
     Route::get('/units','getAllUnits');
 
+    Route::get('/recipe/comments/{id}', 'getCommentsByRecipe');
+
+    Route::get("/test", 'test');
+
+    Route::delete('recipe/deleteComment/{id}','deleteComment');
+
+    Route::put('recipe/updateComment','updateComment');
+
+    Route::post('recipe/addComment', 'addComment');
     
-    
+    Route::get('/recipe/ratings/{id}', 'getRecipeRating');
+
+    Route::get('/recipe/ratings/{recipe_id}/{user_id}', 'getUserRecipeRating');
+
+    Route::post('/recipe/newRating', 'rateRecipe');
 });
 
 
