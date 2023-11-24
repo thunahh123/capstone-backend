@@ -32,6 +32,9 @@ Route::controller(UserController::class)->group(function () {
     //get user by id
     Route::get('/user/get/{id}','getUser');
 
+    //get user by name
+    Route::get('/user/getName/{name}','getUserByName');
+
     //register
     Route::post('/register','register');
 
@@ -53,14 +56,23 @@ Route::controller(UserController::class)->group(function () {
     //get saved recipes
     Route::get('/user/savedRecipes','getSavedRecipes');
 
+    //get recipes created by user
+    Route::get('/user/getCreatedRecipes','getCreatedRecipes');
+    //delete a recipe created by a user
+    Route::delete('/user/deleteRecipe','deleteMyRecipe');
+
+    //get saved recipes
+    Route::get('/user/savedRecipes','getSavedRecipes');
     //add new saved recipe
     Route::post('/user/addSavedRecipe','addSavedRecipe');
-
     //delete saved recipe
     Route::delete('/user/deleteSavedRecipe','deleteSavedRecipe');
 
-    Route::get('/user/comments', 'getCommentsByUser');
     
+    //get all comments of a user
+    Route::get('/user/getComments', 'getCommentsByUser');
+    //delete comment created by user
+    Route::delete('/user/deleteMyComment','deleteMyComment');
 });
 
 Route::controller(RecipeController::class)->group(function (){
@@ -73,16 +85,15 @@ Route::controller(RecipeController::class)->group(function (){
     //search recipe by name
     Route::get('/recipe/searchName/{searchTerm}','searchRecipe');
 
-    //
+    //filter recipe
     Route::get('/recipe/search','filterRecipe');
 
     //update recipe
     Route::put('/recipe/update','updateRecipe');
+
     //delete recipe
     Route::delete('/recipe/delete/{id}','deleteRecipe');
 
-    //measurement 
-    Route::get('/units','getAllUnits');
 
     Route::get('/recipe/comments/{id}', 'getCommentsByRecipe');
 
@@ -99,6 +110,12 @@ Route::controller(RecipeController::class)->group(function (){
     Route::get('/recipe/ratings/{recipe_id}/{user_id}', 'getUserRecipeRating');
 
     Route::post('/recipe/newRating', 'rateRecipe');
+
+    //getAll measurement unit
+    Route::get('/units','getAllUnits');
+
+    //get unit by id
+    Route::get('/unit/{id}','getUnit');
 });
 
 
@@ -113,11 +130,7 @@ Route::controller(IngredientController::class)->group(function (){
     //search ingredient by name
     Route::get('/ingredient/search/{searchTerm}','searchIngredient');
 
-    //getAll measurement unit
-    Route::get('/unit/all','getAllUnits');
-
-    //get unit by id
-    Route::get('/unit/{id}','getUnit');
+    
 
 });
 

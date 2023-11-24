@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Model
 {
@@ -30,5 +31,10 @@ class User extends Model
     public function sessions():HasMany{
         return $this->hasMany(Session::class);
     }
+
+    public function admin():HasOne{
+        return $this->hasOne(Admin::class);
+    }
+
 
 }

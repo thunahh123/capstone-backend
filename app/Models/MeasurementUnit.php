@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class MeasurementUnit extends Model
 {
     use HasFactory;
-    protected $hidden = ["id"];
+    
 
     public function recipe_ingredients():HasMany{
         return $this->hasMany(RecipeIngredient::class,'unit_id');

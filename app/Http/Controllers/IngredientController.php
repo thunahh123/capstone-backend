@@ -4,10 +4,15 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Ingredient;
+use Illuminate\Support\Facades\Log;
 
 
 class IngredientController extends Controller
 {
+    public function __construct(Request $req){
+        Log::debug("Ingredient Controller",["Request" => $req, "Body" => $req->all()]);
+    }
+
     //add new ingredient
     function addNewIngredient(Request $req){
         $newIngredient = new Ingredient;

@@ -4,18 +4,29 @@ namespace App\Http\Controllers;
 
 use App\Models\Comment;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 use App\Models\Recipe;
+use App\Models\RecipeIngredient;
 use App\Models\MeasurementUnit;
 use App\Models\SavedRecipe;
 use Illuminate\Database\Query\JoinClause;
+use App\Models\Session;
 
 class RecipeController extends Controller
 {
+    public function __construct(Request $req){
+        Log::debug("Recipe Controller",["Request" => $req, "Body" => $req->all()]);
+    }
+
     //add new recipe
     function addNewRecipe(Request $req){
-        $newRecipe = new Recipe;        
-        $newRecipe->author_id = $req->author_id;
+        $newRecipe = new Recipe;  
+        $session = Session::firstWhere("session_key","=",$req->session_key);  
+        if(!$session){
+            return json_encode(['status'=> 'fail','message'=>"Please login"]);
+        }
+        $newRecipe->author_id = $session->user_id;
         $newRecipe->cooking_time_in_mins = $req->time;
         $newRecipe->title = $req->title;
         $newRecipe->serving = $req->serving;
@@ -50,52 +61,57 @@ class RecipeController extends Controller
 
     //filter Recipe by 
     function filterRecipe(Request $req){
-        $totals_table = DB::table('recipe_ingredients')
-                        ->select('recipe_ingredients.recipe_id', DB::raw('COUNT(*) as total_ingredients'))
-                        ->groupBy('recipe_ingredients.recipe_id');
+        // $totals_table = DB::table('recipe_ingredients')
+        //                 ->select('recipe_ingredients.recipe_id', DB::raw('COUNT(*) as total_ingredients'))
+        //                 ->groupBy('recipe_ingredients.recipe_id');
 
-        $results = DB::table('recipes')
-                    ->join('recipe_ingredients', 'recipes.id', '=', 'recipe_ingredients.recipe_id')
-                    ->leftJoinSub($totals_table, 'totals', function(JoinClause $join){$join->on('recipe_ingredients.recipe_id', '=', 'totals.recipe_id');})
-                    ->select(DB::raw('COUNT(*) as matching_ingredients'), DB::raw('MAX(total_ingredients) as total_ingredients'), 'recipes.*')
-                    ->whereIn('recipe_ingredients.ingredient_id', $req->ingredient_ids)
-                    ->where([
-                        ['cooking_time_in_mins', '>=', $req->min_cook_time],
-                        ['cooking_time_in_mins', '<=', $req->max_cook_time],
-                        ['total_ingredients', '>=', $req->min_ingredients],
-                        ['total_ingredients', '<=', $req->max_ingredients]])
-                    ->groupBy('recipes.id')
-                    ->orderByDesc('matching_ingredients')
-                    ->get();
-
-        //  DB::select('select count(*) as matching_ingredients, max(total_ingredients) as total_ingredients, r.* 
-        //                         from capstone.recipes r 
-        //                         join capstone.recipe_ingredients ri 
-        //                             on r.id = ri.recipe_id 
-        //                         left join (select ri2.recipe_id, count(*) as total_ingredients from capstone.recipe_ingredients ri2 group by ri2.recipe_id) as totals 
-        //                             on totals.recipe_id = ri.recipe_id 
-        //                         where ri.ingredient_id in ? 
-        //                             and total_ingredients >= ? 
-        //                             and total_ingredients <= ? 
-        //                             and cooking_time_in_mins >= ? 
-        //                             and cooking_time_in_mins <= ? 
-        //                         group by r.id 
-        //                         order by matching_ingredients desc;',
-        //                         [json_encode($req->ingredient_ids), $req->min_ingredients, $req->max_ingredients,  $req->min_cook_time, $req->max_cook_time]);
-        return $results;
-
-        // $recipe_matches = RecipeIngredient::select('recipe_id',DB::raw("count(*) as total_matches"))->whereIn('ingredient_id', $req->ingredient_ids)->groupBy('recipe_id')->orderByDesc('total_matches')->get();
-        // $matches = $recipe_matches->pluck('recipe')-where;
-        // return $matches;
-        // foreach($recipe_matches as $match){
-        //      array_push($matches, $match->recipe_id);
-        //  }
-        // $recipes =  Recipe::whereIn('id', $matches)->where([['cooking_time_in_mins', '>=', $req->min_cook_time], ['cooking_time_in_mins', '<=', $req->max_cook_time],[],[]])->get();
-        // //$ingre_query = RecipeIngredient::select('recipe_id',DB::raw("count(*) as total_ingredients"))->groupBy('recipe_id')->get() ;
+        // $results = DB::table('recipes')
+        //             ->join('recipe_ingredients', 'recipes.id', '=', 'recipe_ingredients.recipe_id')
+        //             ->leftJoinSub($totals_table, 'totals', function(JoinClause $join){$join->on('recipe_ingredients.recipe_id', '=', 'totals.recipe_id');})
+        //             ->select(DB::raw('COUNT(*) as matching_ingredients'), DB::raw('MAX(total_ingredients) as total_ingredients'), 'recipes.*')
+        //             ->whereIn('recipe_ingredients.ingredient_id', array_map('intval',$req->ingredient_ids))
+        //             ->where([
+        //                 ['cooking_time_in_mins', '>=', intval($req->min_cook_time)],
+        //                 ['cooking_time_in_mins', '<=', intval($req->max_cook_time)],
+        //                 ['total_ingredients', '>=', intval($req->min_ingredients)],
+        //                 ['total_ingredients', '<=', intval($req->max_ingredients)]])
+        //             ->groupBy('recipes.id')
+        //             ->orderByDesc('matching_ingredients')
+        //             ->get();
         
-        // //return $ingre_query;
+        // return $results;
+        // $matching_recipes = [];
+        // foreach(RecipeIngredient::whereIn('ingredient_id', array_map('intval',$req->ingredient_ids))->select("recipe_id")->groupBy('recipe_id')->get() as $r){
+        //     array_push($matching_recipes, $r->recipe_id);
+        // }
+        //return $matching_recipes;
+        
+        // $matching_recipes = array_map(function($result){return $result->recipe_id;},RecipeIngredient::whereIn('ingredient_id', array_map('intval',$req->ingredient_ids))->select("recipe_id")->groupBy('recipe_id')->get()->toArray()); 
+        // return $matching_recipes;
+        $matching_recipes = [];
+        foreach (RecipeIngredient::whereIn('ingredient_id', array_map('intval', $req->ingredient_ids))->select("recipe_id", DB::raw('COUNT(*) as matching_ingredients'))->groupBy('recipe_id')->get() as $r) {
+            array_push($matching_recipes, ["recipe_id"=>$r->recipe_id, "matching_ingredients"=>$r->matching_ingredients]);
+        }
+        $recipes = Recipe::whereIn('id', array_map(function($match){return $match["recipe_id"];}, $matching_recipes))->with('ingredients')->get();
+        $return_recipes = [];
+        foreach ($recipes as $recipe) {
+            $recipe->matching_ingredients = 0;
+            foreach($matching_recipes as $match){
+                $recipe->matching_ingredients += $recipe->id===$match["recipe_id"] ? $match["matching_ingredients"] : 0; 
+            }
+            array_push($return_recipes , $recipe);
+        }
 
+        // sort by matching ingredients
+        usort($return_recipes, function($a, $b){
+            return $b["matching_ingredients"] - $a["matching_ingredients"];});
 
+        
+        return $return_recipes;
+    }
+    //get rating by recipe_id
+    function getRatings(){
+        
     }
 
     //delete recipe
