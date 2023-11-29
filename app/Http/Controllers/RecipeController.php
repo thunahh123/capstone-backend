@@ -10,8 +10,9 @@ use App\Models\Recipe;
 use App\Models\RecipeIngredient;
 use App\Models\MeasurementUnit;
 use App\Models\SavedRecipe;
-use Illuminate\Database\Query\JoinClause;
 use App\Models\Session;
+use App\Models\User;
+use Illuminate\Database\QueryException;
 
 class RecipeController extends Controller
 {
@@ -33,7 +34,6 @@ class RecipeController extends Controller
         $newRecipe->description = $req->desc;
         $newRecipe->direction = json_encode($req->direction); 
         $newRecipe->save();       
-        //loop? and set recipe_ingredient  
         foreach($req->ingredients as $ingredient){
             DB::statement("INSERT INTO recipe_ingredients(recipe_id, ingredient_id, quantity, unit_id) VALUES (?, ?, ?, ?)", 
                 [$newRecipe->id,
@@ -41,12 +41,12 @@ class RecipeController extends Controller
                  $ingredient["quantity"], 
                  $ingredient["unit_id"]]);
         }     
-        return json_encode('New Recipe Added');
+        return json_encode(['status'=> 'success','message'=>"New recipe added",'newId'=>$newRecipe->id]);
     }
 
     //get recipe by id
     function getRecipe($id){
-        $recipe = Recipe::with('recipe_ingredients')->find($id);
+        $recipe = Recipe::with('recipe_ingredients')->with('user')->find($id);
         $recipe->direction = json_decode($recipe->direction);
         for($i=0;$i<count($recipe->recipe_ingredients);$i++){
             $recipe->recipe_ingredients[$i]->ingredient;
@@ -141,20 +141,31 @@ class RecipeController extends Controller
     function getNumberOfSaves($id){
         return json_encode(['saves'=> count(SavedRecipe::where('recipe_id', $id)->get())]);
     }
-
+    //get all comments of a recipe
     function getCommentsByRecipe($id){
-       return Comment::where('recipe_id',$id)->where('parent_comment_id', null)->with('children')->get();
+       return Comment::where('recipe_id',$id)->whereNull('parent_comment_id')->with('user')->with('children')->with('children.user')->get();
     }
     //add new comment
     function addComment(Request $req){
+        $session = Session::firstWhere("session_key","=",$req->session_key);
+        if(!$session){
+            return json_encode(['status'=> 'fail','message'=>"Please login"]);
+        }
         $newComment = new Comment;
-        $newComment->author_id = $req->author_id;
+        $newComment->author_id = $session->user_id;
         $newComment->recipe_id = $req->recipe_id;
         $newComment->parent_comment_id =$req->parent_comment_id;
         $newComment->content = $req->content;
-        $newComment->save();
-        return json_encode('comment added');
+        try{
+            $newComment->save();
+            return json_encode(['status'=> 'success','message'=>"Comment added"]);
+        }
+        catch(QueryException $ex){
+            return json_encode(['status'=> 'fail','message'=>"Couldn't add comment at this time."]);
+        }
+        
     }
+    
     //delete comment
     function deleteComment($id){
         Comment::find($id)->delete();
@@ -162,12 +173,36 @@ class RecipeController extends Controller
     }
     //update comment
     function updateComment(Request $req){
+        $session = Session::firstWhere("session_key","=",$req->session_key);
+        if(!$session){
+            return json_encode(['status'=> 'fail','message'=>"Please login"]);
+        }
         $updateComment = Comment::find($req->id);
         $updateComment->content = $req->update_content;
         $updateComment->save();
-        return json_encode('comment updated');
+        return json_encode(['status'=> 'success','message'=>"Comment updated"]);
     }
 
+    //get feature recipes
+    function getFeaturedRecipes(){
+        return Recipe::where('featured',true)->get();
+    }
+
+    //set recipe as a feature
+    function setFeaturedRecipe(Request $req){         
+        $session = Session::firstWhere("session_key","=",$req->session_key);  
+        if(!$session){
+            return json_encode(['status'=> 'fail','message'=>"Please login"]);
+        }
+        $user = User::find($session->user_id);
+        if(!$user->is_admin){
+            return json_encode(['status'=> 'fail','message'=>"Not authorized"]);
+        }
+        $recipe = Recipe::find($req->recipe_id);
+        $recipe->featured = !$recipe->featured;
+        $recipe->save();
+        return json_encode(['status'=> 'success','message'=>"Recipe is now".(!$recipe->featured ? " not " : " ")."featured."]);
+    }
 
 
     function test(){

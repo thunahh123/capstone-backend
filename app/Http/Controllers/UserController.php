@@ -127,7 +127,7 @@ class UserController extends Controller
             $newSession->user_id = $user->id;
             $newSession->session_key = Str::uuid();
             $newSession->save();            
-            return json_encode(['status' => 'success', 'session_key' => $newSession->session_key]);
+            return json_encode(['status' => 'success', 'session_key' => $newSession->session_key, 'is_admin' => $user->is_admin]);
         }        
     } 
 
@@ -146,7 +146,7 @@ class UserController extends Controller
         $session = Session::firstWhere("session_key","=",$req->session_key);
         // return $session;
         if(!$session){
-            return json_encode(['status'=> 'fail','messages'=>"Please login"]);
+            return json_encode(['status'=> 'fail','message'=>"Please login"]);
         }
         $savedRecipe = SavedRecipe::where('user_id','=',$session->user_id);
         return $savedRecipe->get()->pluck('recipe');       
@@ -170,17 +170,17 @@ class UserController extends Controller
     function deleteSavedRecipe(Request $req){
         $session = Session::firstWhere("session_key","=",$req->session_key);
         if(!$session){
-            return json_encode(['status'=> 'fail','messages'=>"Please login"]);
+            return json_encode(['status'=> 'fail','message'=>"Please login"]);
         }
         SavedRecipe::where('user_id',$session->user_id)->where('recipe_id',$req->recipe_id)->delete();
-        return json_encode(['status'=> 'success','messages'=>'item deleted']);
+        return json_encode(['status'=> 'success','message'=>'item deleted']);
         
     }
     //get recipes created by a user
     function getCreatedRecipes(Request $req){
         $session = Session::firstWhere("session_key","=",$req->session_key);
         if(!$session){
-            return json_encode(['status'=> 'fail','messages'=>"Please login"]);
+            return json_encode(['status'=> 'fail','message'=>"Please login"]);
         }
         $recipes = Recipe::where('author_id','=',$session->user_id);
         return $recipes->get();
@@ -189,17 +189,17 @@ class UserController extends Controller
     function deleteMyRecipe(Request $req){
         $session = Session::firstWhere("session_key","=",$req->session_key);
         if(!$session){
-            return json_encode(['status'=> 'fail','messages'=>"Please login"]);
+            return json_encode(['status'=> 'fail','message'=>"Please login"]);
         }
         Recipe::where('author_id','=',$session->user_id)->where('id',$req->recipe_id)->delete();
-        return json_encode(['status'=> 'success','messages'=>'item deleted']);
+        return json_encode(['status'=> 'success','message'=>'item deleted']);
     }
 
     //get comments by user
     function getCommentsByUser(Request $req){
         $session = Session::firstWhere("session_key","=",$req->session_key);
         if(!$session){
-            return json_encode(['status'=> 'fail','messages'=>"Please login"]);
+            return json_encode(['status'=> 'fail','message'=>"Please login"]);
         }
         return Comment::where('author_id',"=",$session->user_id)->with('recipe')->get();
          
@@ -209,10 +209,18 @@ class UserController extends Controller
     function deleteMyComment(Request $req){
         $session = Session::firstWhere("session_key","=",$req->session_key);
         if(!$session){
-            return json_encode(['status'=> 'fail','messages'=>"Please login"]);
+            return json_encode(['status'=> 'fail','message'=>"Please login"]);
         }
         Comment::where('author_id',"=",$session->user_id)->where('id',$req->comment_id)->delete();
-        return json_encode(['status'=> 'success','messages'=>'item deleted']);
+        return json_encode(['status'=> 'success','message'=>'item deleted']);
          
     }
+
+    //a user like a comment
+    // function likeComment(Request $req){
+    //     $session = Session::firstWhere("session_key","=",$req->session_key);
+    //     if(!$session){
+    //         return json_encode(['status'=> 'fail','message'=>"Please login"]);
+    //     }
+    // }
 }

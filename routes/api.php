@@ -27,7 +27,7 @@ Route::get('/', function(){
 
 Route::controller(UserController::class)->group(function () {
     //get all users
-    Route::get('/user', 'getAllUsers');
+    Route::get('/users/all', 'getAllUsers');
 
     //get user by id
     Route::get('/user/get/{id}','getUser');
@@ -95,7 +95,7 @@ Route::controller(RecipeController::class)->group(function (){
     Route::delete('/recipe/delete/{id}','deleteRecipe');
 
 
-    Route::get('/recipe/comments/{id}', 'getCommentsByRecipe');
+    Route::get('/recipe/getComments/{id}', 'getCommentsByRecipe');
 
     Route::get("/test", 'test');
 
@@ -110,6 +110,12 @@ Route::controller(RecipeController::class)->group(function (){
     Route::get('/recipe/ratings/{recipe_id}/{user_id}', 'getUserRecipeRating');
 
     Route::post('/recipe/newRating', 'rateRecipe');
+
+    // get featured recipes
+    Route::get('/recipe/getFeatured', 'getFeaturedRecipes');
+
+    // toggle recipe "featured" status
+    Route::put('/recipe/setFeatured', 'setFeaturedRecipe');
 
     //getAll measurement unit
     Route::get('/units','getAllUnits');
