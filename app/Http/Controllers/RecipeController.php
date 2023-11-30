@@ -47,6 +47,8 @@ class RecipeController extends Controller
     //get recipe by id
     function getRecipe($id){
         $recipe = Recipe::with('recipe_ingredients')->with('user')->find($id);
+        $recipe->views++;
+        $recipe->save();
         $recipe->direction = json_decode($recipe->direction);
         for($i=0;$i<count($recipe->recipe_ingredients);$i++){
             $recipe->recipe_ingredients[$i]->ingredient;
@@ -92,7 +94,15 @@ class RecipeController extends Controller
         foreach (RecipeIngredient::whereIn('ingredient_id', array_map('intval', $req->ingredient_ids))->select("recipe_id", DB::raw('COUNT(*) as matching_ingredients'))->groupBy('recipe_id')->get() as $r) {
             array_push($matching_recipes, ["recipe_id"=>$r->recipe_id, "matching_ingredients"=>$r->matching_ingredients]);
         }
-        $recipes = Recipe::whereIn('id', array_map(function($match){return $match["recipe_id"];}, $matching_recipes))->with('ingredients')->get();
+
+
+        $recipes = Recipe::whereIn('id', array_map(function($match){return $match["recipe_id"];}, $matching_recipes))
+                        ->where([['cooking_time_in_mins', '>=', intval($req->min_cook_time)], 
+                            ['cooking_time_in_mins', '<=', intval($req->max_cook_time)],])
+                        ->with('ingredients')->get();
+
+        
+
         $return_recipes = [];
         foreach ($recipes as $recipe) {
             $recipe->matching_ingredients = 0;
@@ -101,6 +111,11 @@ class RecipeController extends Controller
             }
             array_push($return_recipes , $recipe);
         }
+
+        // Log::debug("Filter recipes",["Matching Recipes" => $matching_recipes, "Array Map" => $req->all()]);
+
+        $filter_ingredients = fn($i) => (count($i->ingredients)<=$req->max_ingredients && count($i->ingredients)>=$req->min_ingredients);
+        $return_recipes = array_filter($return_recipes, $filter_ingredients);
 
         // sort by matching ingredients
         usort($return_recipes, function($a, $b){

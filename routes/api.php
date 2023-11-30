@@ -47,6 +47,9 @@ Route::controller(UserController::class)->group(function () {
     //delete user
     Route::delete('/user/delete','deleteUser') ;
 
+    //turn user to an admin
+    Route::put('/user/newAdmin','promoteAdmin');
+
     //update email
     Route::put('/user/updateEmail','updateEmail');
 
