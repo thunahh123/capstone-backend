@@ -188,9 +188,9 @@ class UserController extends Controller
     {
         $session = Session::firstWhere("session_key", "=", $req->session_key);
         // return $session;
-        if (!$session) {
-            return json_encode(['status' => 'fail', 'message' => "Please login"]);
-        }
+        // if (!$session) {
+        //     return json_encode(['status' => 'fail', 'message' => "Please login"]);
+        // }
         $savedRecipe = SavedRecipe::where('user_id', '=', $req->id);
         return $savedRecipe->get()->pluck('recipe');
     }
