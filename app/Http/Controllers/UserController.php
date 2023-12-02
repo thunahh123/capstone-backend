@@ -224,10 +224,10 @@ class UserController extends Controller
     //get recipes created by a user
     function getCreatedRecipes(Request $req)
     {
-        $session = Session::firstWhere("session_key", "=", $req->session_key);
-        if (!$session) {
-            return json_encode(['status' => 'fail', 'message' => "Please login"]);
-        }
+        // $session = Session::firstWhere("session_key", "=", $req->session_key);
+        // if (!$session) {
+        //     return json_encode(['status' => 'fail', 'message' => "Please login"]);
+        // }
         $recipes = Recipe::where('author_id', '=', $req->id);
         return $recipes->get();
     }
@@ -250,9 +250,9 @@ class UserController extends Controller
     function getCommentsByUser(Request $req)
     {
         $session = Session::firstWhere("session_key", "=", $req->session_key);
-        if (!$session) {
-            return json_encode(['status' => 'fail', 'message' => "Please login"]);
-        }
+        // if (!$session) {
+        //     return json_encode(['status' => 'fail', 'message' => "Please login"]);
+        // }
         return Comment::where('author_id', "=", $req->id)->with('recipe')->get();
     }
 
