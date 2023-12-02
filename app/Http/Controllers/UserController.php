@@ -23,35 +23,48 @@ class UserController extends Controller
     //get all users
     function getAllUsers()
     {
-        return User::all();
+        $allUsers = User::with('recipes', 'comments')->get();
+        return $allUsers;
     }
 
     //get user by id
     function getUser($id)
     {
-        return User::find($id); //id = 'savedRecipes'
+        $user = User::find($id); //id = 'savedRecipes'
+        if(!$user){
+            return json_encode(['status' => 'fail', 'message' => "Could not find user"]);
+        }
+        return json_encode(['status' => 'success', 'message' => 'User found', 'content' => $user]);
     }
 
     //get user by username
     function getUserByName($name)
     {
-        return User::firstWhere('name', '=', $name);
+        $user = User::firstWhere('name', '=', $name);
+        if(!$user){
+            return json_encode(['status' => 'fail', 'message' => "Could not find user"]);
+        }
+        return json_encode(['status' => 'success', 'message' => 'User found', 'content' => $user]);
     }
 
     //delete user by id
     function deleteUser(Request $req)
     {
         $session = Session::firstWhere("session_key", $req->session_key);
-        // Log::debug("del user", ['session'=>$session, "ifResult"=> $session]);
         if (!$session) {
             return json_encode(['status' => 'fail', 'message' => "Please login"]);
         }
-        if ($session->user_id !== $req->user_id && !$session->user->is_admin) {
+        Log::debug("del user", ['user_id'=>$req->user_id,'session'=>$session, "is_admin"=> $session->user->is_admin]);
+        if ($session->user_id !== intval($req->user_id) && !$session->user->is_admin) {
             return json_encode(['status' => 'fail', 'message' => "Unauthorized action"]);
         }
         $user = User::find($req->user_id);
         if (!$user) {
             return json_encode(['status' => 'fail', 'message' => "Could not find user"]);
+        }
+        
+        if($user->is_admin){
+            return json_encode(['status' => 'fail', 'message' => "User is an admin"]);
         }
         $user->delete();
         return json_encode(['status' => 'success', 'message' => 'User deleted']);
@@ -156,7 +169,7 @@ class UserController extends Controller
             $newSession->user_id = $user->id;
             $newSession->session_key = Str::uuid();
             $newSession->save();
-            return json_encode(['status' => 'success', 'session_key' => $newSession->session_key, 'is_admin' => $user->is_admin]);
+            return json_encode(['status' => 'success','user_id'=>$newSession->user_id, 'session_key' => $newSession->session_key, 'is_admin' => $user->is_admin]);
         }
     }
 
@@ -178,9 +191,11 @@ class UserController extends Controller
         if (!$session) {
             return json_encode(['status' => 'fail', 'message' => "Please login"]);
         }
-        $savedRecipe = SavedRecipe::where('user_id', '=', $session->user_id);
+        $savedRecipe = SavedRecipe::where('user_id', '=', $req->id);
         return $savedRecipe->get()->pluck('recipe');
     }
+
+
 
     //add saved recipe
     function addSavedRecipe(Request $req)
@@ -193,7 +208,7 @@ class UserController extends Controller
         $newSavedRecipe->user_id = $session->user_id;
         $newSavedRecipe->recipe_id = $req->recipe_id;
         $newSavedRecipe->save();
-        return json_encode(['status' => 'success']);
+        return json_encode(['status' => 'success', 'message' => "Successfully saved"]);
     }
 
     //remove saved recipe
@@ -213,17 +228,21 @@ class UserController extends Controller
         if (!$session) {
             return json_encode(['status' => 'fail', 'message' => "Please login"]);
         }
-        $recipes = Recipe::where('author_id', '=', $session->user_id);
+        $recipes = Recipe::where('author_id', '=', $req->id);
         return $recipes->get();
     }
     //remove recipes created by a user
     function deleteMyRecipe(Request $req)
     {
-        $session = Session::firstWhere("session_key", "=", $req->session_key);
+        $session = Session::with('user')->firstWhere("session_key", "=", $req->session_key);
         if (!$session) {
             return json_encode(['status' => 'fail', 'message' => "Please login"]);
         }
-        Recipe::where('author_id', '=', $session->user_id)->where('id', $req->recipe_id)->delete();
+        $recipe = Recipe::firstWhere('id', $req->recipe_id);
+        if($recipe->author_id !== $session->user_id && !$session->user->is_admin){
+            return json_encode(['status' => 'fail', 'message' => "Not authorized"]);
+        }
+        $recipe->delete();
         return json_encode(['status' => 'success', 'message' => 'item deleted']);
     }
 
@@ -234,7 +253,7 @@ class UserController extends Controller
         if (!$session) {
             return json_encode(['status' => 'fail', 'message' => "Please login"]);
         }
-        return Comment::where('author_id', "=", $session->user_id)->with('recipe')->get();
+        return Comment::where('author_id', "=", $req->id)->with('recipe')->get();
     }
 
     //delete comment created by user

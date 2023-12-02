@@ -82,6 +82,9 @@ Route::controller(RecipeController::class)->group(function (){
     //add new recipe
     Route::post('/recipe/new','addNewRecipe');
 
+    //get all recipes
+    Route::get('/recipes/all', 'getAllRecipes');
+
     //get recipe by id
     Route::get('/recipe/find/{id}','getRecipe');
 
@@ -102,7 +105,7 @@ Route::controller(RecipeController::class)->group(function (){
 
     Route::get("/test", 'test');
 
-    Route::delete('recipe/deleteComment/{id}','deleteComment');
+    Route::delete('recipe/deleteComment','deleteComment');
 
     Route::put('recipe/updateComment','updateComment');
 
@@ -112,7 +115,7 @@ Route::controller(RecipeController::class)->group(function (){
 
     Route::get('/recipe/ratings/{recipe_id}/{user_id}', 'getUserRecipeRating');
 
-    Route::post('/recipe/newRating', 'rateRecipe');
+    Route::put('/recipe/newRating', 'rateRecipe');
 
     // get featured recipes
     Route::get('/recipe/getFeatured', 'getFeaturedRecipes');
